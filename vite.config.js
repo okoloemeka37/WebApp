@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js','resources/js/Message/sendMessage.js','resources/js/Message/GetBroadCast.js'],
+            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/Dashboard/Dash.js', 'resources/js/Message/sendMessage.js', 'resources/js/Message/GetBroadCast.js'],
             refresh: true,
         }),
         tailwindcss(),
