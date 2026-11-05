@@ -24,7 +24,7 @@ Route::middleware(['agent.auth'])->group(function () {
     Route::post("/AgentLogout",[AgentController::class, 'AgentLogout'])->name('AgentLogout');
 });
 
-Route::get('/test',[AgentController::class, 'AddGroups']);
+Route::get('/test',[GroupController::class, 'GetContacts']);
 
 Route::get('/broadcast-test', function () {
     

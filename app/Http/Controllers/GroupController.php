@@ -20,56 +20,23 @@ function __construct(WhatsAppGroupService $whatsappService){
 
 
     public function groupChat($id){
-        try {
+       
+    try {
             $group_Id= \decrypt($id);
-           $messages=$this->whatsappService->getGroupMessages($group_Id);
-          $participants=$this->whatsappService->fetchGroupInfo($group_Id)['participants'];
-
-
-              foreach ($participants as $pat) {
-                Participant::updateOrCreate(['group_id'=>$group_Id,'phoneNumber'=>$pat['phoneNumber']],[
-                    'isAdmin'=>$pat['admin']=='null'?'false':'true',
-                    'phoneNumber'=>$pat['phoneNumber'],
-                    'participant_id'=>$pat['id'],
-                    'group_id'=>$group_Id
-                    ]);
-            }
-
-         $chats=$messages['messages']['records'];
-
-         foreach ($chats as $chat) {
-            if ($chat['messageType']=='conversation') {
-                
-              Chats::updateOrCreate(['message_id'=>$chat['key']['id']],[
-                'message_timestamp'=>Carbon::createFromTimestamp($chat['messageTimestamp']??0)->toDateTimeString()
-            ,'quoted_message_id' => $chat['contextInfo']['stanzaId'] ?? null,
-            'is_from_me'=>$chat['key']['fromMe'],
-            'body'=>$chat['message']['conversation'],
-            'message_type'=>$chat['messageType'],
-            'sender_name'=>$chat['pushName'],
-            'sender_id'=>$chat['pushName'],
-            'group_id'=>$chat['key']['remoteJid'],
-            'message_id'=>$chat['key']['id'],
-            'participant_contact_id'=>$chat['key']['participantAlt']??'',
-            'source'=>$chat['source']??'',
-            'status'=>'DROP'
-
-
-            ]);
-            
-         
-            }
-           
-            }
  
-        $ftChats=Chats::where('group_id',$group_Id)->get();
+                
+              
+             $ftChats=Chats::where('group_id',$group_Id)->get();
 
           $contacts=Contacts::get();
         return view('Agent/Chats',compact('ftChats','contacts','group_Id'));  
-        } catch (\Throwable $th) {
+         
+            } catch (\Throwable $th) {
            \Log::info($th);
         }
+
     }
+
 
     public function GetContacts(){
         $contacts=$this->whatsappService->fetchAllContacts();

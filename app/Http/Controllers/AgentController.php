@@ -7,6 +7,7 @@ use App\Services\WhatsAppGroupService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Symfony\Component\VarDumper\VarDumper;
 
 class AgentController extends Controller
@@ -24,6 +25,7 @@ function __construct(WhatsAppGroupService $whatsappService){
             'email'=>'required',
             'password'=>'required'
        ]);
+
        try {
         if (Auth::guard('agent')->attempt(['email' => $field['email'], 'password' => $field['password']],$request->boolean('remember'))) {
         $request->session()->regenerate();
