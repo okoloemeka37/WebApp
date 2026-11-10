@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\chat\Reaction;
 use App\Models\Chats;
 use App\Models\Contacts;
 use App\Models\Participant;
@@ -25,8 +26,18 @@ function __construct(WhatsAppGroupService $whatsappService){
             $group_Id= \decrypt($id);
  
                 
-              
-             $ftChats=Chats::where('group_id',$group_Id)->get();
+           $reactions = Reaction::where('group_id', $group_Id)->whereNot('body',NULL)->get()->toArray();
+$ftChats = Chats::where('group_id', $group_Id)->get();
+
+foreach ($ftChats as $chats) {
+
+    $thg = array_filter($reactions, function($reaction) use ($chats) {
+        return $reaction['reactionTo'] == $chats['message_id'];
+    });
+$chats['reaction']=$thg;
+}
+
+
 
           $contacts=Contacts::get();
         return view('Agent/Chats',compact('ftChats','contacts','group_Id'));  
@@ -38,32 +49,44 @@ function __construct(WhatsAppGroupService $whatsappService){
     }
 
 
-    public function GetContacts(){
-        $contacts=$this->whatsappService->fetchAllContacts();
-        dd($contacts);
-      try {
-          foreach ($contacts as $contact) {
-            if ($contact['type']==='contact') {
-               Contacts::updateOrCreate(['contact_id'=>$contact['remoteJid']],[
-             'contact_id'=>$contact['remoteJid']??'',
-             'name'=>$contact['pushName']??'',
-             'profilePicUrl'=>$contact['profilePicUrl']??''
-               ]);
-            }
-        }
-      } catch (\Throwable $th) {
-         \Log::error($th);
-      }
+   public function GetContacts()
+{
+    try {
+        $contacts = collect($this->whatsappService->fetchAllContacts())
+            ->where('type', 'contact');
+
+        $contacts->chunk(100)->each(function ($chunk) {
+
+            $data = $chunk->map(function ($contact) {
+                return [
+                    'contact_id' => $contact['remoteJid'],
+                    'name' => $contact['pushName'] ?? '',
+                    'profilePicUrl' => $contact['profilePicUrl'] ?? '',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ];
+            })->values()->toArray();
+
+            Contacts::upsert(
+                $data,
+                ['contact_id'],
+                ['name', 'profilePicUrl', 'updated_at']
+            );
+
+        });
+
+    } catch (\Throwable $th) {
+        \Log::error($th);
     }
+}
 
-
-    public function sendMessage(Request $request){
+  /*   public function sendMessage(Request $request){
             try {
                 $field=$request->validate(['message_text'=>'required',]);
 
-            $sentMessage=$this->whatsappService->sendGroupMessage($request['groupId'],$field['message_text']);
+            //$sentMessage=$this->whatsappService->sendGroupMessage($request['groupId'],$field['message_text']);
    
-            if (count($sentMessage)!==0) {
+         if (count($sentMessage)!==0) {
                   
                    Chats::create([
                         'group_id'=>$sentMessage['key']['remoteJid']??'',
@@ -77,7 +100,7 @@ function __construct(WhatsAppGroupService $whatsappService){
                         'status'=>'SENT'
                    ]); 
                 
-            }
+            } 
             return response()->json(['success' => true],200);
             }catch (\Throwable $e) {
               return response()->json([
@@ -88,7 +111,7 @@ function __construct(WhatsAppGroupService $whatsappService){
 
 
     }
-
+ */
 
 
 }

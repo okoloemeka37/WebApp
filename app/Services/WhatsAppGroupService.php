@@ -44,7 +44,7 @@ class WhatsAppGroupService
     public function getGroupMessages(string $remoteJid): array
     {
         try {
-            $response = Http::timeout(80)->withHeaders([
+            $response = Http::timeout(120)->withHeaders([
                 'apikey' => $this->apiKey,
                 'Content-Type' => 'application/json',
             ])->post("{$this->baseUrl}/chat/findMessages/{$this->instanceName}", [
@@ -122,13 +122,13 @@ public function fetchGroupInfo(string $groupId): array
     public function sendGroupMessage(string $remoteJid, string $messageText): ?array
 {
     try {
-        $response = Http::withHeaders([
+        $response = Http::timeout(150)->withHeaders([
             'apikey' => $this->apiKey,
             'Content-Type' => 'application/json',
         ])->post("{$this->baseUrl}/message/sendText/{$this->instanceName}", [
             'number' => $remoteJid,
             'text' => $messageText,
-            'delay' => 1200, 
+            'delay' => 500, 
         ]);
 
         if ($response->successful()) {
@@ -148,7 +148,7 @@ public function fetchGroupInfo(string $groupId): array
 /**
      * Reply to a specific message in a group by referencing its ID.
      */
-    public function replyToGroupMessage(string $remoteJid, string $messageText, string $quotedMessageId, string $participantJid, bool $fromMe = false): ?array
+    public function replyToGroupMessage(string $remoteJid, string $messageText, string $quotedMessageId, string $participantJid): ?array
     {
         try {
             $response = Http::timeout(30)->withHeaders([
@@ -161,7 +161,7 @@ public function fetchGroupInfo(string $groupId): array
                     'key' => [
                         'id' => $quotedMessageId,       // The ID of the message being replied to
                         'remoteJid' => $remoteJid,       // The group JID
-                        'fromMe' => $fromMe,             // Was the original message sent by you or them?
+                        'fromMe' => true,             // Was the original message sent by you or them?
                         'participant' => $participantJid // Who sent the original message
                     ]
                 ]

@@ -21,7 +21,8 @@ return new class extends Migration
             $table->text('body')->nullable();
             $table->boolean('is_from_me')->default(false);
             $table->string('quoted_message_id')->nullable();
-            $table->string('source')->nullable(); 
+            $table->string('source')->nullable();
+           
             $table->string('status')->nullable();
             $table->timestamp('message_timestamp');
             $table->timestamps();
