@@ -17,6 +17,7 @@ return view('Agent.AgentLogin');
 Route::post('/AgentLogin',[AgentController::class,'login'])->name('PostAgentLogin');
 
 Route::middleware(['agent.auth'])->group(function () {
+    
     Route::get('/AgentDashboard',[AgentController::class, 'AgentDash'])->name('AgentDash');
 
     Route::get("/groupChat/{id}",[GroupController::class,'groupChat'])->name('groupChat');

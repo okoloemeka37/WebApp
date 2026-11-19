@@ -72,50 +72,61 @@ function HandleReply($chats,$replyId){
                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                         <i class="fa-solid fa-magnifying-glass text-xs"></i>
                     </span>
-                    <input type="text" placeholder="Search synced groups..." 
+                    <input type="text" id="sidebarGroupSearch" placeholder="Search synced groups..." 
                         class="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all">
                 </div>
             </div>
 
             <!-- Group Chat List Stream -->
             <div class="flex-1 overflow-y-auto divide-y divide-slate-100">
-                
-                <!-- Active Selected Group Item -->
-                <div class="p-3.5 bg-orange-50/70 border-l-4 border-orange-600 cursor-pointer transition-all">
-                    <div class="flex justify-between items-start mb-1">
-                        <h3 class="text-xs font-bold text-slate-900 truncate max-w-[170px]">VIP Client Cohort A</h3>
-                        <span class="text-[10px] text-orange-600 font-medium">10:42 AM</span>
-                    </div>
-                    <p class="text-xs text-slate-600 truncate"><strong>Jane Doe:</strong> Can someone share the pricing deck?</p>
-                    <div class="flex items-center justify-between mt-2">
-                        <span class="text-[10px] bg-slate-200/70 text-slate-600 px-2 py-0.5 rounded font-mono">1203630...g.us</span>
-                        <span class="w-4 h-4 bg-orange-600 text-white rounded-full text-[10px] flex items-center justify-center font-bold">3</span>
-                    </div>
-                </div>
-
-                <!-- Regular Group Item -->
-                <div class="p-3.5 hover:bg-slate-50 cursor-pointer transition-all">
-                    <div class="flex justify-between items-start mb-1">
-                        <h3 class="text-xs font-semibold text-slate-800 truncate max-w-[170px]">Partners & Affiliates Q3</h3>
-                        <span class="text-[10px] text-slate-400">Yesterday</span>
-                    </div>
-                    <p class="text-xs text-slate-500 truncate"><strong>Mark Smith:</strong> Done with verification.</p>
-                    <div class="flex items-center justify-between mt-2">
-                        <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono">1203631...g.us</span>
-                    </div>
-                </div>
-
-                <!-- Regular Group Item -->
-                <div class="p-3.5 hover:bg-slate-50 cursor-pointer transition-all">
-                    <div class="flex justify-between items-start mb-1">
-                        <h3 class="text-xs font-semibold text-slate-800 truncate max-w-[170px]">Enterprise Onboarding</h3>
-                        <span class="text-[10px] text-slate-400">Oct 20</span>
-                    </div>
-                    <p class="text-xs text-slate-500 truncate"><strong>You:</strong> Welcome to the channel everyone!</p>
-                    <div class="flex items-center justify-between mt-2">
-                        <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono">1203632...g.us</span>
-                    </div>
-                </div>
+                @foreach ($groups as $group)
+                    @php
+                        $latestChat = $group->latest_chat;
+                        $isActive = $group->group_id === $group_Id;
+                        $chatTime = $latestChat
+                            ? \Carbon\Carbon::parse($latestChat->message_timestamp)
+                            : ($group->subjectTime ? \Carbon\Carbon::parse($group->subjectTime) : null);
+                        $senderName = $latestChat
+                            ? ($latestChat->is_from_me ? 'You' : ($latestChat->sender_name ?: 'Unknown'))
+                            : 'No messages';
+                    @endphp
+                    <a href="{{ route('groupChat', ['id' => encrypt($group->group_id)]) }}"
+                       class="group-sidebar-item block p-3.5 {{ $isActive ? 'bg-orange-50/70 border-l-4 border-orange-600' : 'hover:bg-slate-50 border-l-4 border-transparent' }} cursor-pointer transition-all"
+                       data-group-name="{{ strtolower($group->subject ?: '') }}"
+                       data-group-id="{{ $group->group_id }}">
+                        <div class="flex justify-between items-start mb-1">
+                            <h3 class="text-xs {{ $isActive ? 'font-bold' : 'font-semibold' }} text-slate-900 truncate max-w-[170px]"
+                                title="{{ $group->subject }}">
+                                {{ $group->subject ?: 'Unnamed group' }}
+                            </h3>
+                            @if ($chatTime)
+                                <span class="sidebar-time {{ $isActive ? 'text-orange-600' : 'text-slate-400' }} text-[10px] font-medium whitespace-nowrap"
+                                      title="{{ $chatTime->format('M j, Y g:i A') }}">
+                                    @if ($chatTime->isToday())
+                                        {{ $chatTime->format('g:i A') }}
+                                    @elseif ($chatTime->isYesterday())
+                                        Yesterday
+                                    @else
+                                        {{ $chatTime->format('M j') }}
+                                    @endif
+                                </span>
+                            @endif
+                        </div>
+                        <p class="text-xs {{ $isActive ? 'text-slate-600' : 'text-slate-500' }} truncate">
+                            @if ($latestChat)
+                                <strong>{{ $senderName }}:</strong> {{ $latestChat->body ?: '[Media/message]' }}
+                            @else
+                                <span>No messages yet</span>
+                            @endif
+                        </p>
+                        <div class="flex items-center justify-between mt-2">
+                            <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono">
+                                {{ $chatTime ? $chatTime->format('M j, Y g:i A') : 'No activity' }}
+                            </span>
+                            <span class="text-[10px] text-slate-400">{{ $group->size ?: 0 }} members</span>
+                        </div>
+                    </a>
+                @endforeach
 
             </div>
 
@@ -155,8 +166,8 @@ function HandleReply($chats,$replyId){
                         <i class="fa-solid fa-users"></i>
                     </div>
                     <div>
-                        <h2 class="text-sm font-bold text-slate-900">VIP Client Cohort A</h2>
-                        <p class="text-xs text-slate-500">48 participants &bull; Gateway Connected</p>
+                        <h2 class="text-sm font-bold text-slate-900">{{ $activeGroup->subject ?? 'Unnamed group' }}</h2>
+                        <p class="text-xs text-slate-500">{{ $activeGroup->size ?? 0 }} participants &bull; Gateway Connected</p>
                     </div>
                 </div>
 
@@ -199,10 +210,10 @@ function HandleReply($chats,$replyId){
             body="{{ $chat['body'] }}"
             participantId="{{ $chat['participant_contact_id'] }}">
 
-            <div class="max-w-[82%] sm:max-w-[60%] min-w-[140px] relative">
+            <div class="max-w-[82%] sm:max-w-[60%] min-w-[140px] w-fit relative">
 
                 <!-- Bubble Container -->
-                <div class="bg-[#ea580c] text-white rounded-2xl rounded-tr-xs px-4 py-2.5 shadow-sm relative">
+                <div class="bg-[#ea580c] text-white rounded-2xl rounded-tr-xs px-4 py-2.5 shadow-sm relative w-fit max-w-full">
 
                     @if ($chat['quoted_message_id'] !== NULL)
                         <!-- Quoted Reply -->
@@ -262,10 +273,10 @@ function HandleReply($chats,$replyId){
                 JD
             </div>
 
-            <div class="min-w-0 flex-1 relative">
+            <div class="min-w-[140px] w-fit max-w-full relative">
 
                 <!-- Bubble Container -->
-                <div class="bg-white border border-slate-200/90 text-slate-800 rounded-2xl rounded-tl-xs px-4 py-2.5 shadow-2xs relative">
+                <div class="bg-white border border-slate-200/90 text-slate-800 rounded-2xl rounded-tl-xs px-4 py-2.5 shadow-2xs relative w-fit max-w-full">
 
                     @if ($chat['quoted_message_id'] !== NULL)
                         <!-- Quoted Reply -->
@@ -322,12 +333,13 @@ function HandleReply($chats,$replyId){
                     
                     <div class="flex items-center gap-2">
                         <!-- Attachment / Canned Response Buttons -->
-                        <p  class="p-2.5 text-slate-400 hover:text-orange-600 hover:bg-slate-50 rounded-xl transition-all" title="Attach Document">
+                        <button type="button" id="attachDocument" class="shrink-0 w-9 h-9 flex items-center justify-center text-slate-400 hover:text-orange-600 hover:bg-slate-50 rounded-xl transition-all" title="Attach Document" aria-label="Attach Document">
                             <i class="fa-solid fa-paperclip text-sm"></i>
-                        </p>
-                        <p  class="p-2.5 text-slate-400 hover:text-orange-600 hover:bg-slate-50 rounded-xl transition-all" title="Canned Responses">
+                        </button>
+                        <input type="file" id="attachDocumentFile" class="hidden" name="attachment">
+                        <button type="button" id="cannedResponses" class="shrink-0 w-9 h-9 flex items-center justify-center text-slate-400 hover:text-orange-600 hover:bg-slate-50 rounded-xl transition-all" title="Canned Responses" aria-label="Canned Responses">
                             <i class="fa-solid fa-bolt text-sm"></i>
-                        </p>
+                        </button>
                         
                       <!-- Reply Preview (Hidden by default) -->
                       <div class="flex-1 relative">
@@ -351,9 +363,9 @@ function HandleReply($chats,$replyId){
 
 <!-- Message Input Field -->
 <div class="flex-1 relative">
-    <input type="text" id="input_Mess" name="message_text" required
+    <textarea id="input_Mess" name="message_text" required rows="1"
         placeholder="Type group message as agent..."
-        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all">
+        class="block w-full max-h-32 resize-none overflow-y-auto px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 leading-5 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"></textarea>
 </div>
 
 </div>
@@ -361,9 +373,9 @@ function HandleReply($chats,$replyId){
                             <input type="hidden" id="AID" name="user_id" value="{{ auth('agent')->user()['id']}}">
                            
                             <!-- Send Button -->
-                        <button type="submit" class="px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl shadow-lg shadow-orange-600/20 active:scale-[0.99] transition-all flex items-center gap-2 text-xs">
-                            <span>Send</span>
-                            <i class="fa-solid fa-paper-plane text-xs"></i>
+                        <button type="submit" class="shrink-0 px-4 sm:px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl shadow-lg shadow-orange-600/20 active:scale-[0.99] transition-all flex items-center gap-2 text-xs" aria-label="Send message">
+                            <span class="hidden sm:inline">Send</span>
+                            <i class="fa-solid fa-paper-plane text-sm"></i>
                             <div id="MessSpin" class="hidden h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-orange-600"></div>
                         </button>
                     </div>
@@ -400,5 +412,12 @@ function HandleReply($chats,$replyId){
 
 
 <script>
- 
+document.getElementById('sidebarGroupSearch')?.addEventListener('input', function () {
+    const search = this.value.toLowerCase().trim();
+
+    document.querySelectorAll('.group-sidebar-item').forEach(function (item) {
+        item.classList.toggle('hidden', !item.dataset.groupName.includes(search));
+    });
+});
+</script>
 @endsection

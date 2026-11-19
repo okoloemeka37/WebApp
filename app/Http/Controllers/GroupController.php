@@ -6,6 +6,7 @@ use App\Models\chat\Reaction;
 use App\Models\Chats;
 use App\Models\Contacts;
 use App\Models\Participant;
+use App\Models\Group;
 use App\Services\WhatsAppGroupService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -27,7 +28,7 @@ function __construct(WhatsAppGroupService $whatsappService){
  
                 
            $reactions = Reaction::where('group_id', $group_Id)->whereNot('body',NULL)->get()->toArray();
-$ftChats = Chats::where('group_id', $group_Id)->get();
+$ftChats = Chats::where('group_id', $group_Id)->orderBy('message_timestamp')->orderBy('id')->get();
 
 foreach ($ftChats as $chats) {
 
@@ -40,7 +41,22 @@ $chats['reaction']=$thg;
 
 
           $contacts=Contacts::get();
-        return view('Agent/Chats',compact('ftChats','contacts','group_Id'));  
+        $activeGroup = Group::where('group_id', $group_Id)->first();
+        $groups = Group::orderByDesc('subjectTime')->get()->map(function ($group) {
+            $latestChat = Chats::where('group_id', $group->group_id)
+                ->orderByDesc('message_timestamp')
+                ->orderByDesc('id')
+                ->first();
+
+            $group->latest_chat = $latestChat;
+            return $group;
+        })->sortByDesc(function ($group) {
+            return $group->latest_chat?->message_timestamp
+                ?? $group->subjectTime
+                ?? $group->updated_at;
+        })->values();
+
+        return view('Agent/Chats',compact('ftChats','contacts','group_Id','activeGroup','groups'));  
          
             } catch (\Throwable $th) {
            \Log::info($th);

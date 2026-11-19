@@ -10,6 +10,45 @@ allChats.forEach(ct => {
 
 srt()
 
+function updateSidebarPreview(mess) {
+    if (!mess?.group_id) return;
+
+    const item = document.querySelector(`.group-sidebar-item[data-group-id="${CSS.escape(mess.group_id)}"]`);
+    if (!item) return;
+
+    const preview = item.querySelector('p');
+    const time = item.querySelector('.sidebar-time');
+    const sender = mess.is_from_me == 1 ? 'You' : (mess.sender_name || 'Unknown');
+    const body = mess.body || '[Media/message]';
+
+    if (preview) preview.innerHTML = `<strong>${sender}:</strong> ${body}`;
+
+    if (time) {
+        const timestamp = mess.message_timestamp ? new Date(mess.message_timestamp) : new Date();
+        const validTimestamp = Number.isNaN(timestamp.getTime()) ? new Date() : timestamp;
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+
+        if (validTimestamp.toDateString() === today.toDateString()) {
+            time.textContent = validTimestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        } else if (validTimestamp.toDateString() === yesterday.toDateString()) {
+            time.textContent = 'Yesterday';
+        } else {
+            time.textContent = validTimestamp.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        }
+        time.title = validTimestamp.toLocaleString([], {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        });
+    }
+
+    item.parentElement?.prepend(item);
+}
+
 function HandleReply(replyId) {
     if (replyId === null) return '';
 
@@ -43,6 +82,7 @@ function HandleReply(replyId) {
                      
                     if(event.message.length > 0){
                         const messa=JSON.parse(event.message)
+                        messa.forEach(updateSidebarPreview);
                        
                         const GID=document.querySelector('#GID').value;
                      
@@ -77,14 +117,14 @@ function converHandler(mess) {
                                 let snip={id:mess['message_id'],name:mess['send_name'],'body':mess['body']}
                                 ChatId.push(snip);
                                  const safeMessage = document.createElement("p");
-                                    safeMessage.className = "text-xs leading-relaxed";
+                                    safeMessage.className = "text-xs leading-relaxed whitespace-pre-wrap break-words";
                                     safeMessage.textContent = mess['body'];
                                     
                                    
 
                                     const Message_Temp =mess['is_from_me']==1? `
                                         <div class="flex items-end justify-end gap-2 mit${mess['message_id']} chatM" id="${ mess['message_id'] }" name="${mess['sender_name']}" body="${ mess['body']}" participantId="${ mess['participant_contact_id']} ">
-                                            <div class="bg-orange-600 text-white rounded-2xl rounded-br-sm p-3.5 shadow-md shadow-orange-600/10 max-w-xl relative">
+                                            <div class="bg-orange-600 text-white rounded-2xl rounded-br-sm p-3.5 shadow-md shadow-orange-600/10 w-fit max-w-full relative">
                                                
                                              <!-- Original message being replied to -->
                                                 
@@ -110,7 +150,7 @@ function converHandler(mess) {
                                         </div>
                                     `:` <div class="flex items-end gap-2 max-w-xl mit${mess['message_id']} chatM " id="${ mess['message_id'] }" name="${mess['sender_name']}" body="${ mess['body']}" participantId="${ mess['participant_contact_id']} ">
                     <div class="w-7 h-7 rounded-full bg-slate-300 flex items-center justify-center text-[10px] font-bold text-slate-700 shrink-0">JD</div>
-                    <div class="bg-white border border-slate-200/80 rounded-2xl rounded-bl-sm p-3.5 shadow-xs relative">
+                    <div class="bg-white border border-slate-200/80 rounded-2xl rounded-bl-sm p-3.5 shadow-xs relative w-fit max-w-full">
                                 
                     <div class="reply-content"></div>
                     

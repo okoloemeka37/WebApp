@@ -2,7 +2,25 @@ const MessageHolder = document.querySelector("#MessageHolder");
 MessageHolder.scrollTop = MessageHolder.scrollHeight;
 
 const message_form=document.querySelector("#message_form");
+const input = document.querySelector("#input_Mess");
 
+function resizeMessageInput() {
+    if (!input) return;
+    input.style.height = 'auto';
+    input.style.height = `${Math.min(input.scrollHeight, 128)}px`;
+}
+
+input?.addEventListener('input', resizeMessageInput);
+input?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        message_form?.requestSubmit();
+    }
+});
+
+document.querySelector("#attachDocument")?.addEventListener("click", () => {
+    document.querySelector("#attachDocumentFile")?.click();
+});
 
 let message_id='';
 let participantId='';
@@ -60,12 +78,12 @@ const inputMessValue = input.value.trim();
 
 if (inputMessValue !== "") {
     const safeMessage = document.createElement("p");
-    safeMessage.className = "text-xs leading-relaxed";
+    safeMessage.className = "text-xs leading-relaxed whitespace-pre-wrap break-words";
     safeMessage.textContent = inputMessValue;
 
     const Message_Temp = `
         <div class="flex items-end justify-end gap-2 mit${ret['key']['id']} chatM" id="${ret['key']['id']}" name="Zyler" body="${inputMessValue}" participantId="2349017251972@s.whatsapp.net'" >
-            <div class="bg-orange-600 text-white rounded-2xl rounded-br-sm p-3.5 shadow-md shadow-orange-600/10 max-w-xl relative">
+            <div class="bg-orange-600 text-white rounded-2xl rounded-br-sm p-3.5 shadow-md shadow-orange-600/10 w-fit max-w-full relative">
             
               <div class="bg-orange-700/70 border-l-4 cursor-pointer border-orange-300 rounded-lg px-3 py-2 mb-2 replyMess" originalId="${message_id}">
             <div class="text-xs font-semibold text-orange-200 mb-1">
@@ -110,6 +128,7 @@ if (inputMessValue !== "") {
         .replaceWith(safeMessage);
 
     input.value = '';
+    resizeMessageInput();
 
     MessageHolder.scrollTop = MessageHolder.scrollHeight;
 }
