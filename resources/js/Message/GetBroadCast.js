@@ -29,7 +29,9 @@ function HandleReply(replyId) {
             </div>
         </div>
     `;
-}     
+}    
+
+
        document.addEventListener('DOMContentLoaded', () => {
 
 
@@ -41,6 +43,7 @@ function HandleReply(replyId) {
                      
                     if(event.message.length > 0){
                         const messa=JSON.parse(event.message)
+                       
                         const GID=document.querySelector('#GID').value;
                      
                         if (GID==messa[0]['group_id']) {
@@ -48,6 +51,29 @@ function HandleReply(replyId) {
                             
 
                               messa.forEach(mess => {
+                               if (mess['message_type']=='reactionMessage') {
+                                console.log(mess)
+                                ReactHandler(mess)
+
+                               }else{converHandler(mess)}
+                            }); 
+                        }
+                        
+                    }
+
+
+                    replyMe()
+                    
+                    //document.getElementById('connection-status').textContent ='Live update received!';
+                });
+        });
+
+        
+    
+// Function to handle conversation
+
+function converHandler(mess) {
+    
                                 let snip={id:mess['message_id'],name:mess['send_name'],'body':mess['body']}
                                 ChatId.push(snip);
                                  const safeMessage = document.createElement("p");
@@ -57,8 +83,8 @@ function HandleReply(replyId) {
                                    
 
                                     const Message_Temp =mess['is_from_me']==1? `
-                                        <div class="flex items-end justify-end gap-2 mit${mess['message_id']} chatM">
-                                            <div class="bg-orange-600 text-white rounded-2xl rounded-br-sm p-3.5 shadow-md shadow-orange-600/10 max-w-xl">
+                                        <div class="flex items-end justify-end gap-2 mit${mess['message_id']} chatM" id="${ mess['message_id'] }" name="${mess['sender_name']}" body="${ mess['body']}" participantId="${ mess['participant_contact_id']} ">
+                                            <div class="bg-orange-600 text-white rounded-2xl rounded-br-sm p-3.5 shadow-md shadow-orange-600/10 max-w-xl relative">
                                                
                                              <!-- Original message being replied to -->
                                                 
@@ -72,14 +98,19 @@ function HandleReply(replyId) {
                                                 </div>
 
                                                 <div class="message-content"></div>
+                                                      <div class="flex justify-start -mt-2 pl-2 relative z-10">
+                                                      <div class="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-full px-2 py-0.5 shadow-xs text-xs react${mess['message_id']}">
+                                                                                                                                      <span class="text-[10px] font-bold text-slate-500 pl-0.5 react${mess['message_id']}">0</span>
 
+                                                        </div>
+                                                        </div>
                                                 <div class="flex items-center justify-end gap-1 mt-1 text-[10px] text-orange-200">
                                                 </div>
                                             </div>
                                         </div>
-                                    `:` <div class="flex items-end gap-2 max-w-xl mit${mess['message_id']} chatM">
+                                    `:` <div class="flex items-end gap-2 max-w-xl mit${mess['message_id']} chatM " id="${ mess['message_id'] }" name="${mess['sender_name']}" body="${ mess['body']}" participantId="${ mess['participant_contact_id']} ">
                     <div class="w-7 h-7 rounded-full bg-slate-300 flex items-center justify-center text-[10px] font-bold text-slate-700 shrink-0">JD</div>
-                    <div class="bg-white border border-slate-200/80 rounded-2xl rounded-bl-sm p-3.5 shadow-xs">
+                    <div class="bg-white border border-slate-200/80 rounded-2xl rounded-bl-sm p-3.5 shadow-xs relative">
                                 
                     <div class="reply-content"></div>
                     
@@ -88,7 +119,12 @@ function HandleReply(replyId) {
                            
                         </div>
                         <div class="message-content"></div>
-                    
+
+                                                        <div class="flex justify-start -mt-2 pl-2 relative z-10">
+                                                        <div class="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-full px-2 py-0.5 shadow-xs text-xs react${mess['message_id']} ">
+                                                                            <span class="text-[10px] font-bold text-slate-500 pl-0.5 react${mess['message_id']}">0</span>
+                                                        </div>
+                                                        </div>
                         <span class="block text-[10px] text-slate-400 text-right mt-1"> ${new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</span>
 
                     </div>
@@ -107,21 +143,26 @@ function HandleReply(replyId) {
                                         MessageHolder.lastElementChild.querySelector('.reply-content').replaceWith(safereply);
                                 
                                     MessageHolder.scrollTop = MessageHolder.scrollHeight;
+                            
+}
 
-                            }); 
-                        }
-                        
-                    }
+function ReactHandler(mess){
+    const cla=".react"+mess['reactionTo']
+    const holder=document.querySelector(cla);
 
+    if (mess['body']===null) {
+      
+      document.getElementById("reaction" + mess['participant_contact_id'])?.remove();
 
-                    replyMe()
-                    
-                    //document.getElementById('connection-status').textContent ='Live update received!';
-                });
-        });
-    
+      //document.querySelector(".react"+mess['reactionTo']).innerHTML= Number(document.querySelector(".react"+mess['reactionTo']).innerHTML)-1
+    }else{
+       
+    const temp=`<span class="cursor-pointer" id="reaction${mess['participant_contact_id']}">${mess['body']}</span>`
 
-    
+    holder.insertAdjacentHTML('beforeend',temp)
+
+    }
+}
 
 
 //REPLY SECTION

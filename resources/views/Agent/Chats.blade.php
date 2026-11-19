@@ -172,82 +172,147 @@ function HandleReply($chats,$replyId){
                 </div>
             </header>
 
+
+
+
+
             <!-- Messages Stream Area -->
-            <div id="MessageHolder" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50 h-10 overflow-y-scroll">
-                
-                <!-- Date Divider -->
-                <div class="flex justify-center">
-                    <span class="px-3 py-1 bg-slate-200/70 text-slate-600 text-[10px] font-semibold rounded-full uppercase tracking-wider">Today</span>
-                </div>
+ 
+                    <div id="MessageHolder" class="flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 py-6 space-y-4 bg-[#f4f2ed] scroll-smooth">
 
-                <!-- Inbound Message From Member -->
-               
-                @foreach ($ftChats as $chat)
-               
-                   
-
-                @if ($chat['is_from_me'])
-                <div class="flex items-end justify-end gap-2 mit{{ $chat['message_id'] }} chatM" id="{{ $chat['message_id'] }}" name="{{ $chat['sender_name'] }}" body="{{ $chat['body'] }}">
-                      <div class="bg-orange-600 text-white rounded-2xl rounded-br-sm p-3.5 shadow-md shadow-orange-600/10 max-w-xl">
-                     
-                       @if ($chat['quoted_message_id'] !== NULL)
-                             <!-- Original message being replied to -->
-                                <?php echo HandleReply($ftChats, $chat['quoted_message_id'])?>
-                        @endif
-                        
-                        
-                        <div class="flex items-center justify-between gap-4 mb-1">
-                            <span class="text-xs font-semibold text-orange-100">You (<?php echo getName($chat['participant_contact_id'],$contacts,$chat['sender_name'])?>)</span>
-                            <span class="block text-[10px] text-white-400 text-right mt-1">
-            {{ \Carbon\Carbon::parse($chat['message_timestamp'])->format('H:i:s') }}
+    <!-- Date Divider -->
+    <div class="flex justify-center my-2">
+        <span class="px-3.5 py-1 bg-white/90 border border-slate-200/80 text-slate-500 text-[10px] font-bold rounded-full shadow-2xs tracking-wider uppercase">
+            Today
         </span>
-                        </div>
-                        <p class="text-xs leading-relaxed">{{ $chat['body'] }}</p>
-                        <div class="flex items-center justify-end gap-1 mt-1 text-[10px] text-orange-200">
-                            
-                            {{-- <i class="fa-solid fa-check-double text-emerald-300"></i> --}}
-                        </div>
-                    </div>
-                </div>
-                @else
-              
-<div class="flex items-end gap-2 max-w-xl mit{{ $chat['message_id'] }} chatM" id="{{ $chat['message_id'] }}"  name="{{ $chat['sender_name'] }}" body="{{ $chat['body'] }}">
-    <div class="w-7 h-7 rounded-full bg-slate-300 text-[10px] font-bold text-slate-700 shrink-0 flex items-center justify-center">
-        JD
     </div>
 
-    <div class="bg-white border border-slate-200/80 rounded-2xl rounded-bl-sm p-3.5 shadow-sm max-w-full">
+    @foreach ($ftChats as $chat)
 
-        <!-- Original message being replied to -->
-       @if ($chat['quoted_message_id'] !== NULL)
-                <?php echo HandleReply($ftChats, $chat['quoted_message_id'])?>
-       @endif
+        @if ($chat['is_from_me'])
 
-        <!-- Reply header -->
-        <div class="flex items-center gap-2 mb-1">
-            <span class="text-xs font-bold text-orange-600">
-                <?php echo getName($chat['participant_contact_id'], $contacts, $chat['sender_name']) ?>
-            </span>
+        <!-- Outgoing Message -->
+       
+        <div class="flex justify-end mit{{ $chat['message_id'] }} chatM mb-3"
+            id="{{ $chat['message_id'] }}"
+            name="{{ $chat['sender_name'] }}"
+            body="{{ $chat['body'] }}"
+            participantId="{{ $chat['participant_contact_id'] }}">
+
+            <div class="max-w-[82%] sm:max-w-[60%] min-w-[140px] relative">
+
+                <!-- Bubble Container -->
+                <div class="bg-[#ea580c] text-white rounded-2xl rounded-tr-xs px-4 py-2.5 shadow-sm relative">
+
+                    @if ($chat['quoted_message_id'] !== NULL)
+                        <!-- Quoted Reply -->
+                        <div class="mb-2 pl-2.5 border-l-2 border-white/80 bg-black/15 rounded-r-lg py-1 px-2 text-xs backdrop-blur-xs">
+                            <?php echo HandleReply($ftChats, $chat['quoted_message_id'])?>
+                        </div>
+                    @endif
+
+                    <!-- Sender -->
+                    <div class="text-[10px] font-bold text-orange-200/90 mb-0.5 tracking-wide">
+                        You (<?php echo getName($chat['participant_contact_id'],$contacts,$chat['sender_name'])?>)
+                    </div>
+
+                    <!-- Text Content -->
+                    <p class="text-[13.5px] leading-relaxed text-white whitespace-pre-wrap break-words pb-3">
+                        {{ $chat['body'] }}
+                    </p>
+
+                    <!-- Timestamp (Bottom Right Tucked) -->
+                    <span class="absolute bottom-1.5 right-3 text-[9.5px] font-medium text-orange-200/80 select-none">
+                        {{ \Carbon\Carbon::parse($chat['message_timestamp'])->format('H:i') }}
+                    </span>
+
+                </div>
+
+                <!-- Visible Reactions Badge -->
+               <div class="flex justify-start -mt-2 pl-2 relative z-10">
+                    <div class="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-full px-2 py-0.5 shadow-xs text-xs react{{ $chat['message_id'] }}">
+                        
+                @if (count($chat['reaction']) !==0)
+                  @foreach ($chat['reaction'] as $react)
+                            <span class="cursor-pointer" id="reaction{{ $react['participant_contact_id'] }}">{{ $react['body'] }}</span>
+                  @endforeach
+                      
+                        <span class="text-[10px] font-bold text-slate-500 pl-0.5">{{ count($chat['reaction']) }}</span>
+                 
+                @endif
+                  </div>
+                </div>
+
+            </div>
         </div>
 
-        <!-- Actual reply -->
-        <p class="text-xs text-slate-800 leading-relaxed whitespace-pre-wrap break-words">
-            {{ $chat['body'] }}
-        </p>
 
-        <!-- Timestamp -->
-        <span class="block text-[10px] text-slate-400 text-right mt-1">
-            {{ \Carbon\Carbon::parse($chat['message_timestamp'])->format('H:i:s') }}
-        </span>
 
-    </div>
+        @else
+
+        <!-- Incoming Message -->
+        <div class="flex items-end gap-2.5 max-w-[88%] sm:max-w-[70%] mit{{ $chat['message_id'] }} chatM mb-3"
+            id="{{ $chat['message_id'] }}"
+            name="{{ $chat['sender_name'] }}"
+            body="{{ $chat['body'] }}"
+            participantId="{{ $chat['participant_contact_id'] }}">
+
+            <!-- Avatar -->
+            <div class="w-8 h-8 mb-4 rounded-full bg-orange-100 text-orange-600 border border-orange-200/80 text-[11px] font-bold shrink-0 flex items-center justify-center uppercase shadow-2xs">
+                JD
+            </div>
+
+            <div class="min-w-0 flex-1 relative">
+
+                <!-- Bubble Container -->
+                <div class="bg-white border border-slate-200/90 text-slate-800 rounded-2xl rounded-tl-xs px-4 py-2.5 shadow-2xs relative">
+
+                    @if ($chat['quoted_message_id'] !== NULL)
+                        <!-- Quoted Reply -->
+                        <div class="mb-2 pl-2.5 border-l-2 border-orange-500 bg-orange-50/80 rounded-r-lg py-1 px-2 text-xs text-slate-700">
+                            <?php echo HandleReply($ftChats, $chat['quoted_message_id'])?>
+                        </div>
+                    @endif
+
+                    <!-- Sender -->
+                    <div class="text-[10px] font-bold text-orange-600 mb-0.5 tracking-wide">
+                        <?php echo getName($chat['participant_contact_id'], $contacts, $chat['sender_name']) ?>
+                    </div>
+
+                    <!-- Text Content -->
+                    <p class="text-[13.5px] text-slate-700 leading-relaxed whitespace-pre-wrap break-words pb-3">
+                        {{ $chat['body'] }}
+                    </p>
+
+                    <!-- Timestamp (Bottom Right Tucked) -->
+                    <span class="absolute bottom-1.5 right-3 text-[9.5px] font-medium text-slate-400 select-none">
+                        {{ \Carbon\Carbon::parse($chat['message_timestamp'])->format('H:i') }}
+                    </span>
+
+                </div>
+                <div class="flex justify-start -mt-2 pl-2 relative z-10">
+                    <div class="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-full px-2 py-0.5 shadow-xs text-xs react{{ $chat['message_id'] }}">
+                        
+                @if (count($chat['reaction']) !==0)
+                  @foreach ($chat['reaction'] as $react)
+                            <span class="cursor-pointer" id="reaction{{ $react['participant_contact_id'] }}">{{ $react['body'] }}</span>
+                  @endforeach
+                      
+                        <span class="text-[10px] font-bold text-slate-500 pl-0.5 react{{ $chat['message_id'] }}">{{ count($chat['reaction']) }}</span>
+                 
+                @endif
+                  </div>
+                </div>
+
+            </div>
+        </div>
+
+        @endif
+
+    @endforeach
+
 </div>
 
-                @endif
-
-                @endforeach
-       
-            </div>
 
             <div class="p-4 bg-white border-t border-slate-200">
                             <div id="compose-error-message" class="hidden rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400"></div>
@@ -271,19 +336,15 @@ function HandleReply($chats,$replyId){
     <div class="flex items-start justify-between gap-3">
 
         <div class="min-w-0 flex-1">
-            <p class="text-[11px] font-bold text-orange-600 mb-1">
-                Replying to John Doe
-            </p>
+            <p class="text-[11px] font-bold text-orange-600 mb-1 reply-name"></p>
 
-            <p id="ReplyPreviewText" class="text-xs text-slate-600 truncate">
-                This is the original message being replied to...
-            </p>
+            <p id="ReplyPreviewText" class="text-xs text-slate-600 truncate reply-body"></p>
         </div>
 
-        <button type="button" id="CancelReply"
+        <p id="CancelReply"
             class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-500 hover:text-red-500 transition">
             &times;
-        </button>
+        </p>
 
     </div>
 </div>
@@ -298,7 +359,8 @@ function HandleReply($chats,$replyId){
 </div>
                             <input type="hidden" id="GID" name="groupId" value="{{ $group_Id }}">
                             <input type="hidden" id="AID" name="user_id" value="{{ auth('agent')->user()['id']}}">
-                        <!-- Send Button -->
+                           
+                            <!-- Send Button -->
                         <button type="submit" class="px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl shadow-lg shadow-orange-600/20 active:scale-[0.99] transition-all flex items-center gap-2 text-xs">
                             <span>Send</span>
                             <i class="fa-solid fa-paper-plane text-xs"></i>
