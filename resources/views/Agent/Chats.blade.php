@@ -412,6 +412,7 @@ function HandleReply($chats,$replyId){
 
 
 <script>
+    alert("yes")
 document.getElementById('sidebarGroupSearch')?.addEventListener('input', function () {
     const search = this.value.toLowerCase().trim();
 
