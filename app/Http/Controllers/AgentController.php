@@ -25,13 +25,15 @@ function __construct(WhatsAppGroupService $whatsappService){
             'email'=>'required',
             'password'=>'required'
        ]);
-
+        
        try {
         if (Auth::guard('agent')->attempt(['email' => $field['email'], 'password' => $field['password']],$request->boolean('remember'))) {
         $request->session()->regenerate();
 
         return redirect()->route('AgentDash');
        }else{
+
+       //dd($field);
         return back()->withErrors(['failed'=>'Credentials Not Valid']);
        } 
        } catch (\Throwable $th) {
@@ -49,35 +51,7 @@ function __construct(WhatsAppGroupService $whatsappService){
 
 
 
-    public function AddGroups(){
-       $groups=$this->whatsappService->fetchAllGroups();
-
-      
-        foreach ($groups as $group) {
-            Group::updateOrCreate(
-                ['group_id' => $group['id']],
-                [
-                    'linkedParent' => $group['linkedParent'] ?? '',
-                    'isCommunityAnnounce' => $group['isCommunityAnnounce'] ?? '',
-                    'isCommunity' => $group['isCommunity'] ?? '',
-                    'announce' => $group['announce'] ?? '',
-                    'restrict' => $group['restrict'] ?? '',
-                    'descId' => $group['descId'] ?? '',
-                    'desc' => $group['desc'] ?? '',
-                    'owner' => $group['owner'] ?? '',
-                    'group_creation_time' => Carbon::createFromTimestamp($group['creation'] ?? 0)->toDateTimeString(),
-                    'size' => $group['size'] ?? '',
-                    'pictureUrl' => $group['pictureUrl'] ?? '',
-                    'subjectTime' => Carbon::createFromTimestamp($group['subjectTime'] ?? 0)->toDateTimeString(),
-                    'subjectOwner' => $group['subjectOwner'] ?? '',
-                    'subject' => $group['subject'] ?? '',
-                    'group_id' => $group['id'],
-                ]
-            );
-        }
-        dd($groups);
-    }
-
+   
     public function AgentLogout(Request $request){
         Auth::guard('agent')->logout();
          $request->session()->invalidate();

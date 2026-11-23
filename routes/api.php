@@ -18,3 +18,8 @@ Route::post('/webhooks/whatsapp',[AppWebHookController::class, 'handle']);
 Route::post('/message/sendMessage',[SendMessageController::class, 'sendMessage'])->name('sendMessage');
 
 Route::post('/Dashboard/Dashsearch',[DashboardController::class, 'DashSearch'])->name('DashSearch');
+
+
+Route::post('/image/getThumbNailedImage',[GroupController::class,'getThumbNailedImage']);
+
+Route::post('/voiceNote/getVoiceNote',[GroupController::class,'getVoiceNote']);

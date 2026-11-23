@@ -32,3 +32,18 @@ Route::get('/broadcast-test', function () {
 
     return 'Broadcast event dispatched.';
 });
+
+
+Route::get('/health-check', function () {
+    return response()->json([
+        'status' => 'Laravel is responding',
+        'time' => now()->toDateTimeString()
+    ]);
+});
+
+Route::get('/raw-check', function () {
+    return 'Laravel is alive';
+})->withoutMiddleware([
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+]);

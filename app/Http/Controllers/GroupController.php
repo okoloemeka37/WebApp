@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\chat\MediaDetails;
 use App\Models\chat\Reaction;
 use App\Models\Chats;
 use App\Models\Contacts;
@@ -11,6 +12,7 @@ use App\Services\WhatsAppGroupService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
+use Illuminate\Support\Facades\DB;
 class GroupController extends Controller
 {
     
@@ -22,25 +24,81 @@ function __construct(WhatsAppGroupService $whatsappService){
 
 
     public function groupChat($id){
-       
-    try {
+        try {
             $group_Id= \decrypt($id);
- 
+
+            /*  $participants=$this->whatsappService->fetchGroupInfo($group_Id)['participants'];
+              foreach ($participants as $pat) {
+                Participant::updateOrCreate(['group_id'=>$group_Id,'phoneNumber'=>$pat['phoneNumber']],[
+                    'isAdmin'=>$pat['admin']=='null'?'false':'true',
+                    'phoneNumber'=>$pat['phoneNumber'],
+                    'participant_id'=>$pat['id'],
+                    'group_id'=>$group_Id
+                    ]);
+            }
+
+            $messages=$this->whatsappService->getGroupMessages($group_Id);            
+
+         $chats=$messages['messages']['records'];
+
+         foreach ($chats as $chat) {
+            if ($chat['messageType']=='conversation') {
                 
+
            $reactions = Reaction::where('group_id', $group_Id)->whereNot('body',NULL)->get()->toArray();
 $ftChats = Chats::where('group_id', $group_Id)->orderBy('message_timestamp')->orderBy('id')->get();
 
-foreach ($ftChats as $chats) {
+              Chats::updateOrCreate(['message_id'=>$chat['key']['id']],[
+                'message_timestamp'=>Carbon::createFromTimestamp($chat['messageTimestamp']??0)->toDateTimeString()
+            ,'quoted_message_id' => $chat['contextInfo']['stanzaId'] ?? null,
+            'is_from_me'=>$chat['key']['fromMe'],
+            'body'=>$chat['message']['conversation'],
+            'message_type'=>$chat['messageType'],
+            'sender_name'=>$chat['pushName'],
+            'sender_id'=>$chat['pushName'],
+            'group_id'=>$chat['key']['remoteJid'],
+            'message_id'=>$chat['key']['id'],
+            'participant_contact_id'=>$chat['key']['participantAlt']??'',
+            'source'=>$chat['source']??''
+            
+            ]);
+            
+         
+            }
+           
+            } 
 
-    $thg = array_filter($reactions, function($reaction) use ($chats) {
-        return $reaction['reactionTo'] == $chats['message_id'];
-    });
-$chats['reaction']=$thg;
+
+            dd($participants); */
+     
+            $reactions = Reaction::where('group_id', $group_Id)->whereNot('body',NULL)->get()->toArray();
+            $media=MediaDetails::where('group_id', $group_Id)->get()->toArray();
+            
+        $ftChats=Chats::where('group_id',$group_Id)->get();
+
+$reactionGroups = [];
+
+foreach ($reactions as $reaction) {
+    $reactionGroups[$reaction['reactionTo']][] = $reaction;
+}
+
+$mediaGroups = [];
+
+foreach ($media as $me) {
+    $mediaGroups[$me['message_id']][] = $me;
+}
+
+foreach ($ftChats as $key => $chat) {
+    $messageId = $chat['message_id'];
+
+    $ftChats[$key]['reaction'] = $reactionGroups[$messageId] ?? [];
+    $ftChats[$key]['media'] = $mediaGroups[$messageId] ?? [];
 }
 
 
 
           $contacts=Contacts::get();
+
         $activeGroup = Group::where('group_id', $group_Id)->first();
         $groups = Group::orderByDesc('subjectTime')->get()->map(function ($group) {
             $latestChat = Chats::where('group_id', $group->group_id)
@@ -59,10 +117,82 @@ $chats['reaction']=$thg;
         return view('Agent/Chats',compact('ftChats','contacts','group_Id','activeGroup','groups'));  
          
             } catch (\Throwable $th) {
+
+          $groupInfo=Group::where('group_id',$group_Id)->first();
+          $partcipants=Participant::where('group_id',$group_Id)->get();
+
+
+//getting side chats
+
+//$sideGroup=DB::select('select *')
+
+        return view('Agent/Chats',compact('ftChats','contacts','group_Id','groupInfo','partcipants'));  
+
+
+        } catch (\Throwable $th) {
+
            \Log::info($th);
         }
 
     }
+
+
+    
+public function AddGroups()
+{
+    $groups = $this->whatsappService->fetchAllGroups();
+
+    $data = [];
+
+    foreach ($groups as $group) {
+        $data[] = [
+            'group_id' => $group['id'],
+            'linkedParent' => $group['linkedParent'] ?? '',
+            'isCommunityAnnounce' => $group['isCommunityAnnounce'] ?? '',
+            'isCommunity' => $group['isCommunity'] ?? '',
+            'announce' => $group['announce'] ?? '',
+            'restrict' => $group['restrict'] ?? '',
+            'descId' => $group['descId'] ?? '',
+            'desc' => $group['desc'] ?? '',
+            'owner' => $group['owner'] ?? '',
+            'group_creation_time' => !empty($group['creation'])
+                ? Carbon::createFromTimestamp($group['creation'])->toDateTimeString()
+                : null,
+            'size' => $group['size'] ?? '',
+            'pictureUrl' => $group['pictureUrl'] ?? '',
+            'subjectTime' => !empty($group['subjectTime'])
+                ? Carbon::createFromTimestamp($group['subjectTime'])->toDateTimeString()
+                : null,
+            'subjectOwner' => $group['subjectOwner'] ?? '',
+            'subject' => $group['subject'] ?? '',
+        ];
+    }
+
+    if (!empty($data)) {
+        Group::upsert(
+            $data,
+            ['group_id'],
+            [
+                'linkedParent',
+                'isCommunityAnnounce',
+                'isCommunity',
+                'announce',
+                'restrict',
+                'descId',
+                'desc',
+                'owner',
+                'group_creation_time',
+                'size',
+                'pictureUrl',
+                'subjectTime',
+                'subjectOwner',
+                'subject',
+            ]
+        );
+    }
+
+    return count($data);
+}
 
 
    public function GetContacts()
@@ -128,6 +258,59 @@ $chats['reaction']=$thg;
 
     }
  */
+
+
+
+    public function getThumbNailedImage(Request $request){
+        
+try {
+
+    $message_id=$request['id'];
+    
+    $media=MediaDetails::where('message_id',$message_id)->first();
+    
+    if ($media === null) {
+    return response()->json([
+        'success' => false,
+        'message' => 'Media not found'
+    ], 404);
+}else{    return response()->json(['success' => true,'src'=>$media],200);
+}
+
+} catch (\Throwable $e) {
+              return response()->json([
+        'success' => false,
+        'message'=>$e->getMessage(),
+        'error' => ['message' => $e->getMessage(),]
+    ], 500);
+       }
+    }
+
+
+     public function getVoiceNote(Request $request){
+        
+try {
+
+    $message_id=$request['id'];
+    
+    $media=MediaDetails::where('message_id',$message_id)->first();
+    
+    if ($media === null) {
+    return response()->json([
+        'success' => false,
+        'message' => 'Media not found'
+    ], 404);
+}else{    return response()->json(['success' => true,'src'=>$media],200);
+}
+
+} catch (\Throwable $e) {
+              return response()->json([
+        'success' => false,
+        'message'=>$e->getMessage(),
+        'error' => ['message' => $e->getMessage(),]
+    ], 500);
+       }
+    }
 
 
 }

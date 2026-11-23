@@ -178,4 +178,39 @@ public function fetchGroupInfo(string $groupId): array
 
         return null;
     }
+
+    //GET IMAGE
+
+    /**
+ * Request base64 media for a specific message from Evolution API.
+ */
+/**
+ * Request base64 media for a specific message from Evolution API.
+ */
+public function getBase64FromMedia(string $messageId): ?string
+{
+    try {
+        $response = Http::timeout(30)->withHeaders([
+            'apikey' => $this->apiKey,
+            'Content-Type' => 'application/json',
+        ])->post("{$this->baseUrl}/chat/base64FromMedia/{$this->instanceName}", [
+            'message' => [
+                'key' => [
+                    'id' => $messageId
+                ]
+            ]
+        ]);
+
+        if ($response->successful()) {
+            $json = $response->json();
+            return $json['base64'] ?? null;
+        }
+
+        Log::error('Failed to fetch media base64: ' . $response->body());
+    } catch (\Exception $e) {
+        Log::error('Media Exception: ' . $e->getMessage());
+    }
+
+    return null;
+}
 }

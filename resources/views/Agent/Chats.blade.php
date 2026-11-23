@@ -1,7 +1,7 @@
 @extends('agent.layout')
 @section('title','Dashboard')
 <meta name="csrf-token" content="{{ csrf_token() }}"></meta>
-@vite(['resources/js/Message/sendMessage.js','resources/js/Message/GetBroadCast.js'])
+@vite(['resources/js/Message/sendMessage.js','resources/js/Message/GetBroadCast.js','resources/js/Message/Chats.js'])
 @section('content')
 
 <?php
@@ -45,117 +45,7 @@ function HandleReply($chats,$replyId){
 
     <div class="flex h-screen w-full">
 
-        <!-- ================= SIDEBAR: GROUP LIST ================= -->
-        <aside class="w-80 bg-white border-r border-slate-200 flex flex-col h-full z-10">
-            
-            <!-- Sidebar Header -->
-            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-orange-600 text-white flex items-center justify-center shadow-md shadow-orange-600/20">
-                        <i class="fa-solid fa-comments text-lg"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-sm font-bold text-slate-900 tracking-tight">Group Inbox</h2>
-                        <p class="text-xs text-slate-500">160+ Groups Synced</p>
-                    </div>
-                </div>
-                <!-- Agent Status Pill -->
-                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <span class="w-1.5 h-1.5 mr-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                    Online
-                </span>
-            </div>
-
-            <!-- Search Synced Groups -->
-            <div class="p-3 border-b border-slate-100 bg-slate-50/50">
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
-                    </span>
-                    <input type="text" id="sidebarGroupSearch" placeholder="Search synced groups..." 
-                        class="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all">
-                </div>
-            </div>
-
-            <!-- Group Chat List Stream -->
-            <div class="flex-1 overflow-y-auto divide-y divide-slate-100">
-                @foreach ($groups as $group)
-                    @php
-                        $latestChat = $group->latest_chat;
-                        $isActive = $group->group_id === $group_Id;
-                        $chatTime = $latestChat
-                            ? \Carbon\Carbon::parse($latestChat->message_timestamp)
-                            : ($group->subjectTime ? \Carbon\Carbon::parse($group->subjectTime) : null);
-                        $senderName = $latestChat
-                            ? ($latestChat->is_from_me ? 'You' : ($latestChat->sender_name ?: 'Unknown'))
-                            : 'No messages';
-                    @endphp
-                    <a href="{{ route('groupChat', ['id' => encrypt($group->group_id)]) }}"
-                       class="group-sidebar-item block p-3.5 {{ $isActive ? 'bg-orange-50/70 border-l-4 border-orange-600' : 'hover:bg-slate-50 border-l-4 border-transparent' }} cursor-pointer transition-all"
-                       data-group-name="{{ strtolower($group->subject ?: '') }}"
-                       data-group-id="{{ $group->group_id }}">
-                        <div class="flex justify-between items-start mb-1">
-                            <h3 class="text-xs {{ $isActive ? 'font-bold' : 'font-semibold' }} text-slate-900 truncate max-w-[170px]"
-                                title="{{ $group->subject }}">
-                                {{ $group->subject ?: 'Unnamed group' }}
-                            </h3>
-                            @if ($chatTime)
-                                <span class="sidebar-time {{ $isActive ? 'text-orange-600' : 'text-slate-400' }} text-[10px] font-medium whitespace-nowrap"
-                                      title="{{ $chatTime->format('M j, Y g:i A') }}">
-                                    @if ($chatTime->isToday())
-                                        {{ $chatTime->format('g:i A') }}
-                                    @elseif ($chatTime->isYesterday())
-                                        Yesterday
-                                    @else
-                                        {{ $chatTime->format('M j') }}
-                                    @endif
-                                </span>
-                            @endif
-                        </div>
-                        <p class="text-xs {{ $isActive ? 'text-slate-600' : 'text-slate-500' }} truncate">
-                            @if ($latestChat)
-                                <strong>{{ $senderName }}:</strong> {{ $latestChat->body ?: '[Media/message]' }}
-                            @else
-                                <span>No messages yet</span>
-                            @endif
-                        </p>
-                        <div class="flex items-center justify-between mt-2">
-                            <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono">
-                                {{ $chatTime ? $chatTime->format('M j, Y g:i A') : 'No activity' }}
-                            </span>
-                            <span class="text-[10px] text-slate-400">{{ $group->size ?: 0 }} members</span>
-                        </div>
-                    </a>
-                @endforeach
-
-            </div>
-
-            <!-- Sidebar Footer Profile Summary -->
-            <div class="p-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-full bg-slate-300 flex items-center justify-center font-bold text-xs text-slate-700">AG</div>
-                    <div class="overflow-hidden">
-                        <p class="text-xs font-bold text-slate-800 truncate">Agent Alex</p>
-                        <p class="text-[10px] text-slate-500 truncate">business-phone instance</p>
-                    </div>
-                </div>
-                <a href="#" class="text-slate-400 hover:text-orange-600 transition-colors" title="Settings">
-                    <i class="fa-solid fa-gear text-sm"></i>
-                </a>
-
-                <div class="mt-4 border-t border-slate-800 pt-3">
-
-        <form method="POST" action="{{ route('AgentLogout') }}">
-            @csrf
-        <button class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 transition hover:bg-red-500/10 hover:text-red-400">
-            <span class="text-base">↪</span> Logout </button>
-        </form>
-    </div>
-
-            </div>
-
-        </aside>
-
+      <php @include('agent.Chats.Aside')?></php>
         <!-- ================= MAIN CHAT WORKSPACE ================= -->
         <main class="flex-1 flex flex-col h-full bg-white">
             
@@ -184,16 +74,21 @@ function HandleReply($chats,$replyId){
             </header>
 
 
-
+<p class=" hidden topErr text-red-500 text-sm font-medium bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+    <i class="fa-solid fa-circle-exclamation mr-1"></i>
+   <span class="pageError"></span>
+</p>
 
 
             <!-- Messages Stream Area -->
  
-                    <div id="MessageHolder" class="flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 py-6 space-y-4 bg-[#f4f2ed] scroll-smooth">
+
+<div id="MessageHolder"
+    class="flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 py-5 bg-[#f7f5f2] scroll-smooth">
 
     <!-- Date Divider -->
-    <div class="flex justify-center my-2">
-        <span class="px-3.5 py-1 bg-white/90 border border-slate-200/80 text-slate-500 text-[10px] font-bold rounded-full shadow-2xs tracking-wider uppercase">
+    <div class="flex justify-center mb-6">
+        <span class="px-3 py-1 bg-white border border-slate-200/80 text-slate-400 text-[9px] font-bold rounded-full tracking-widest uppercase shadow-sm">
             Today
         </span>
     </div>
@@ -202,127 +97,180 @@ function HandleReply($chats,$replyId){
 
         @if ($chat['is_from_me'])
 
-        <!-- Outgoing Message -->
-       
-        <div class="flex justify-end mit{{ $chat['message_id'] }} chatM mb-3"
+        <!-- OUTGOING -->
+        <div class="flex justify-end mit{{ $chat['message_id'] }} chatM mb-4"
             id="{{ $chat['message_id'] }}"
             name="{{ $chat['sender_name'] }}"
             body="{{ $chat['body'] }}"
             participantId="{{ $chat['participant_contact_id'] }}">
 
-            <div class="max-w-[82%] sm:max-w-[60%] min-w-[140px] w-fit relative">
+            <div class="max-w-[85%] sm:max-w-[65%] lg:max-w-[55%] min-w-0">
 
-                <!-- Bubble Container -->
-                <div class="bg-[#ea580c] text-white rounded-2xl rounded-tr-xs px-4 py-2.5 shadow-sm relative w-fit max-w-full">
+<div class="inline-block max-w-full bg-[#ea580c] text-white rounded-2xl rounded-tr-[5px] px-3 py-1.5 shadow-sm">
 
+                    <!-- Sender -->
+                    <div class="text-[10px] font-bold text-orange-100 mb-1">
+                        You (<?php echo getName($chat['participant_contact_id'],$contacts,$chat['sender_name'])?>)
+                    </div>
+
+                    <!-- Quoted Reply -->
                     @if ($chat['quoted_message_id'] !== NULL)
-                        <!-- Quoted Reply -->
-                        <div class="mb-2 pl-2.5 border-l-2 border-white/80 bg-black/15 rounded-r-lg py-1 px-2 text-xs backdrop-blur-xs">
+                        <div class="mb-2 pl-2.5 pr-2 py-1.5 border-l-2 border-white/80 bg-black/15 rounded-r-md text-[11px] text-orange-50 leading-relaxed">
                             <?php echo HandleReply($ftChats, $chat['quoted_message_id'])?>
                         </div>
                     @endif
 
-                    <!-- Sender -->
-                    <div class="text-[10px] font-bold text-orange-200/90 mb-0.5 tracking-wide">
-                        You (<?php echo getName($chat['participant_contact_id'],$contacts,$chat['sender_name'])?>)
-                    </div>
+                      @if(count($chat['media'])!==0)
+                      
+                    @foreach($chat['media'] as $med)
+                        <img width="100px" height="100px" id="{{ $chat['message_id'] }}" class="ChatImage" src="data:image/png;base64,{{ $med['base64'] }}" alt=""> 
+                    @endforeach
+                   
+                    @endif
 
-                    <!-- Text Content -->
-                    <p class="text-[13.5px] leading-relaxed text-white whitespace-pre-wrap break-words pb-3">
+                    <!-- Message -->
+                    <p class="text-[13px] leading-[1.6] whitespace-pre-wrap break-words">
                         {{ $chat['body'] }}
                     </p>
 
-                    <!-- Timestamp (Bottom Right Tucked) -->
-                    <span class="absolute bottom-1.5 right-3 text-[9.5px] font-medium text-orange-200/80 select-none">
-                        {{ \Carbon\Carbon::parse($chat['message_timestamp'])->format('H:i') }}
-                    </span>
+                    <!-- Time -->
+                    <div class="flex justify-end mt-1">
+                        <span class="text-[9px] text-orange-100/80">
+                            {{ \Carbon\Carbon::parse($chat['message_timestamp'])->format('H:i') }}
+                        </span>
+                    </div>
 
                 </div>
 
-                <!-- Visible Reactions Badge -->
-               <div class="flex justify-start -mt-2 pl-2 relative z-10">
-                    <div class="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-full px-2 py-0.5 shadow-xs text-xs react{{ $chat['message_id'] }}">
-                        
-                @if (count($chat['reaction']) !==0)
-                  @foreach ($chat['reaction'] as $react)
-                            <span class="cursor-pointer" id="reaction{{ $react['participant_contact_id'] }}">{{ $react['body'] }}</span>
-                  @endforeach
-                      
-                        <span class="text-[10px] font-bold text-slate-500 pl-0.5">{{ count($chat['reaction']) }}</span>
-                 
+                <!-- Reactions -->
+                @if (count($chat['reaction']) !== 0)
+                    <div class="flex justify-end -mt-2 pr-2 relative z-10">
+                        <div class="inline-flex items-center gap-1 bg-white border border-slate-200/80 rounded-full px-2.5 py-0.5 shadow-sm text-xs react{{ $chat['message_id'] }}">
+                            @foreach ($chat['reaction'] as $react)
+                                <span class="cursor-pointer hover:scale-125 transition-transform" id="reaction{{ $react['participant_contact_id'] }}">
+                                    {{ $react['body'] }}
+                                </span>
+                            @endforeach
+                            <span class="text-[9px] font-bold text-slate-500 pl-1 border-l border-slate-200">
+                                {{ count($chat['reaction']) }}
+                            </span>
+                        </div>
+                    </div>
                 @endif
-                  </div>
-                </div>
 
             </div>
         </div>
 
-
-
         @else
 
-        <!-- Incoming Message -->
-        <div class="flex items-end gap-2.5 max-w-[88%] sm:max-w-[70%] mit{{ $chat['message_id'] }} chatM mb-3"
+        <!-- INCOMING -->
+       
+        <div class="flex items-end gap-2 max-w-[90%] sm:max-w-[75%] mb-4 mit{{ $chat['message_id'] }} chatM"
             id="{{ $chat['message_id'] }}"
             name="{{ $chat['sender_name'] }}"
             body="{{ $chat['body'] }}"
             participantId="{{ $chat['participant_contact_id'] }}">
 
             <!-- Avatar -->
-            <div class="w-8 h-8 mb-4 rounded-full bg-orange-100 text-orange-600 border border-orange-200/80 text-[11px] font-bold shrink-0 flex items-center justify-center uppercase shadow-2xs">
-                JD
+            <div class="w-7 h-7 mb-4 rounded-full bg-orange-100 text-orange-600 border border-orange-200/70 text-[10px] font-bold shrink-0 flex items-center justify-center uppercase">
+                {{ strtoupper(substr($chat['sender_name'] ?? 'U', 0, 2)) }}
             </div>
 
-            <div class="min-w-[140px] w-fit max-w-full relative">
+             @if ($chat['message_type']=='audioMessage')
+             
+            <div class="flex items-center mb-1 gap-3 w-64 rounded-xl bg-neutral-800 p-2.5 text-white">
 
-                <!-- Bubble Container -->
-                <div class="bg-white border border-slate-200/90 text-slate-800 rounded-2xl rounded-tl-xs px-4 py-2.5 shadow-2xs relative w-fit max-w-full">
+    <button data-audio="{{ $chat['media'][0]['base64'] }}"  onclick="VoiceNote(this)"  class="playVN w-9 h-9 shrink-0 rounded-full bg-orange-600 flex items-center justify-center">
+        <i class="fa-solid fa-play text-sm"></i>
+    </button>
 
-                    @if ($chat['quoted_message_id'] !== NULL)
-                        <!-- Quoted Reply -->
-                        <div class="mb-2 pl-2.5 border-l-2 border-orange-500 bg-orange-50/80 rounded-r-lg py-1 px-2 text-xs text-slate-700">
-                            <?php echo HandleReply($ftChats, $chat['quoted_message_id'])?>
-                        </div>
-                    @endif
+    <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-[3px] h-6 freqHolder">
+            <span class="w-1 h-3 bg-nuetral-500 rounded-full"></span>
+            <span class="w-1 h-5 bg-nuetral-500 rounded-full"></span>
+            <span class="w-1 h-4 bg-nuetral-500 rounded-full"></span>
+            <span class="w-1 h-6 bg-nuetral-500 rounded-full"></span>
+            <span class="w-1 h-3 bg-nuetral-500 rounded-full"></span>
+            <span class="w-1 h-5 bg-neutral-500 rounded-full"></span>
+            <span class="w-1 h-4 bg-neutral-500 rounded-full"></span>
+         
+        </div>
+
+        <div class="flex justify-between text-[10px] text-neutral-400 mt-1">
+            <span class="timer">0:00</span>
+            <span>{{ $chat['media'][0]['seconds'] }}secs</span>
+        </div>
+    </div>
+<p class="VnSpeaker"><i class="fa-solid fa-volume-xmark text-neutral-400"></i></p>
+    
+            </div>
+        @else
+            <div class="min-w-0">
+
+<div class="inline-block max-w-full bg-white border border-slate-200/80 text-slate-800 rounded-2xl rounded-bl-[5px] px-3 py-1.5 shadow-sm">
 
                     <!-- Sender -->
-                    <div class="text-[10px] font-bold text-orange-600 mb-0.5 tracking-wide">
+                    <div class="text-[10px] font-bold text-orange-600 mb-1">
                         <?php echo getName($chat['participant_contact_id'], $contacts, $chat['sender_name']) ?>
                     </div>
 
-                    <!-- Text Content -->
-                    <p class="text-[13.5px] text-slate-700 leading-relaxed whitespace-pre-wrap break-words pb-3">
+                    <!-- Quoted Reply -->
+                    @if ($chat['quoted_message_id'] !== NULL)
+                        <div class="mb-2 pl-2.5 pr-2 py-1.5 border-l-2 border-orange-500 bg-orange-50 rounded-r-md text-[11px] text-slate-600 leading-relaxed">
+                            <?php echo HandleReply($ftChats, $chat['quoted_message_id'])?>
+                        </div>
+                    @endif
+                    @if(count($chat['media'])!==0)
+                      
+                    @foreach($chat['media'] as $med)
+                        <img width="100px" height="100px"  id="{{ $chat['message_id'] }}" class="ChatImage" src="data:image/png;base64,{{ $med['base64'] }}" alt=""> 
+                    @endforeach
+                   
+                    @endif
+                    <!-- Message -->
+                    <p class="text-[13px] leading-[1.6] whitespace-pre-wrap break-words">
                         {{ $chat['body'] }}
                     </p>
 
-                    <!-- Timestamp (Bottom Right Tucked) -->
-                    <span class="absolute bottom-1.5 right-3 text-[9.5px] font-medium text-slate-400 select-none">
-                        {{ \Carbon\Carbon::parse($chat['message_timestamp'])->format('H:i') }}
-                    </span>
+                    <!-- Time -->
+                    <div class="flex justify-end mt-1">
+                        <span class="text-[9px] text-slate-400">
+                            {{ \Carbon\Carbon::parse($chat['message_timestamp'])->format('H:i') }}
+                        </span>
+                    </div>
 
                 </div>
-                <div class="flex justify-start -mt-2 pl-2 relative z-10">
-                    <div class="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-full px-2 py-0.5 shadow-xs text-xs react{{ $chat['message_id'] }}">
-                        
-                @if (count($chat['reaction']) !==0)
-                  @foreach ($chat['reaction'] as $react)
-                            <span class="cursor-pointer" id="reaction{{ $react['participant_contact_id'] }}">{{ $react['body'] }}</span>
-                  @endforeach
-                      
-                        <span class="text-[10px] font-bold text-slate-500 pl-0.5 react{{ $chat['message_id'] }}">{{ count($chat['reaction']) }}</span>
-                 
+
+                <!-- Reactions -->
+                @if (count($chat['reaction']) !== 0)
+                    <div class="flex justify-start -mt-2 pl-2 relative z-10">
+                        <div class="inline-flex items-center gap-1 bg-white border border-slate-200/80 rounded-full px-2.5 py-0.5 shadow-sm text-xs react{{ $chat['message_id'] }}">
+                            @foreach ($chat['reaction'] as $react)
+                                <span class="cursor-pointer hover:scale-125 transition-transform" id="reaction{{ $react['participant_contact_id'] }}">
+                                    {{ $react['body'] }}
+                                </span>
+                            @endforeach
+                            <span class="text-[9px] font-bold text-slate-500 pl-1 border-l border-slate-200">
+                                {{ count($chat['reaction']) }}
+                            </span>
+                        </div>
+                    </div>
                 @endif
-                  </div>
-                </div>
 
             </div>
+            @endif
         </div>
 
         @endif
 
     @endforeach
 
+    <div class="h-3"></div>
 </div>
+
+
+
+
 
 
             <div class="p-4 bg-white border-t border-slate-200">
@@ -392,6 +340,9 @@ function HandleReply($chats,$replyId){
 
 
 
+
+
+
 <svg id="scrollToBottom" class="fixed bottom-24 right-6 z-50 flex items-center justify-center
        w-12 h-12 rounded-full
        bg-gradient-to-br from-orange-400 via-orange-500 to-amber-600
@@ -403,6 +354,47 @@ function HandleReply($chats,$replyId){
      fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m-7-7 7 7 7-7"/>
 </svg>
+
+
+
+<div id="imageModal" class="fixed hidden inset-0 z-50  items-center justify-center bg-orange-950/80 backdrop-blur-sm p-4">
+
+    <div class="relative w-full max-w-4xl overflow-hidden rounded-2xl bg-white border border-orange-200 shadow-2xl shadow-orange-950/30">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between px-5 py-4 border-b border-orange-100 bg-orange-50">
+            <div>
+                <h3 class="text-sm font-bold text-orange-950">Image Preview</h3>
+                <p class="text-xs text-orange-600 mt-1">Preview attachment</p>
+            </div>
+
+            <button  class="closeImageModal flex items-center justify-center w-9 h-9 rounded-full bg-orange-100 hover:bg-orange-200 text-orange-700 hover:text-orange-950 transition">
+                &times;
+            </button>
+        </div>
+
+        <!-- Image -->
+        <div class="flex items-center justify-center bg-orange-50/50 p-4 sm:p-8 min-h-[300px] max-h-[75vh]">
+            <img
+                src="your-image.jpg"
+                alt="Preview"
+                class="preview max-w-full max-h-[65vh] object-contain rounded-xl shadow-lg"
+            >
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-between px-5 py-3 border-t border-orange-100 bg-white">
+            <span class="text-xs font-medium text-orange-700">Image attachment</span>
+
+            <button class="px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold shadow-md shadow-orange-600/20 transition">
+                Download Image
+            </button>
+        </div>
+
+    </div>
+</div>
+
+
         </main>
 
     </div>
@@ -411,8 +403,41 @@ function HandleReply($chats,$replyId){
 
 
 
-<script>
-    alert("yes")
+<script type="module">
+    //handle Image view
+    const chats=@json($ftChats);
+
+    function HandleImageView(){
+        const ChatImage=document.querySelectorAll(".ChatImage");
+
+        ChatImage.forEach(img => {
+            img.addEventListener('click',()=>{
+                const message_id=img.id;
+                console.log(message_id);
+               const [chatDetails]=chats.filter((val)=>val['message_id']==message_id);
+
+               const imageModal=document.querySelector("#imageModal");
+               imageModal.classList.remove('hidden');
+               const mediaDetails=chatDetails['media'][0]
+               imageModal.querySelector(".preview").src="data:image/png;base64,"+mediaDetails['base64']
+
+               
+            })
+        });
+
+    }
+
+    HandleImageView()
+
+    const closeImageModal=document.querySelector(".closeImageModal")
+    closeImageModal.addEventListener('click',()=>{
+         const imageModal=document.querySelector("#imageModal");
+               imageModal.classList.add('hidden');
+    })
+   
+    
+
+
 document.getElementById('sidebarGroupSearch')?.addEventListener('input', function () {
     const search = this.value.toLowerCase().trim();
 
@@ -420,5 +445,7 @@ document.getElementById('sidebarGroupSearch')?.addEventListener('input', functio
         item.classList.toggle('hidden', !item.dataset.groupName.includes(search));
     });
 });
+
 </script>
+ 
 @endsection
